@@ -68,23 +68,33 @@ function handleCheckIn() {
             
             let workStartTime = 9 * 60;          // 09:00 = 540分
             let t930 = 9 * 60 + 30;              // 09:30 = 570分
+            let t1000 = 10 * 60;                 // 10:00 = 600分
             let t1100 = 11 * 60;                 // 11:00 = 660分
 
             let status = "正常";
             let actionType = "checkin";
             let note = "";
 
-            if (totalMinutes >= t930 && totalMinutes < t1100) {
-                // 09:30 到 11:00 之間，直接詢問是否登記為事假兩小時
-                let wantLeave = confirm("目前時間在 09:30 - 11:00 之間，是否要登記為「事假兩小時」？\n\n[確定] 登記事假兩小時\n[取消] 登記為遲到");
+            if (totalMinutes >= t930 && totalMinutes < t1000) {
+                // 09:30 ~ 10:00 之間：事假一小時
+                let wantLeave = confirm("目前時間在 09:30 - 10:00 之間，是否要登記為「事假一小時」？\n\n[確定] 登記事假一小時\n[取消] 登記為遲到");
+                if (wantLeave) {
+                    status = "事假一小時";
+                    note = "09:30-10:00 逾時轉事假一小時";
+                } else {
+                    status = "遲到";
+                }
+            } else if (totalMinutes >= t1000 && totalMinutes < t1100) {
+                // 10:00 ~ 11:00 之間：事假兩小時
+                let wantLeave = confirm("目前時間在 10:00 - 11:00 之間，是否要登記為「事假兩小時」？\n\n[確定] 登記事假兩小時\n[取消] 登記為遲到");
                 if (wantLeave) {
                     status = "事假兩小時";
-                    note = "09:30-11:00 逾時轉事假兩小時";
+                    note = "10:00-11:00 逾時轉事假兩小時";
                 } else {
                     status = "遲到";
                 }
             } else if (totalMinutes >= t1100) {
-                // 超過 11:00 以後（若有需要也可以維持或調整）
+                // 11:00 以後
                 let wantLeave = confirm("目前時間已超過 11:00，是否要登記為事假？\n\n[確定] 登記事假\n[取消] 登記為遲到");
                 if (wantLeave) {
                     status = "事假";
@@ -95,6 +105,7 @@ function handleCheckIn() {
             } else if (totalMinutes > workStartTime) {
                 status = "正常(彈性)";
             }
+            
             sendData({ name: FIXED_NAME, action: actionType, status: status, note: note });
 
         }, function(error) {
