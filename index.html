@@ -105,16 +105,16 @@
     <label>請輸入假別：</label>
     <input type="text" id="leaveType" placeholder="例如：事假、病假、特休">
 
-    <input type="text" id="leaveNote" placeholder="請假原因（例如：家裡有事、看醫生）">
+    <input type="text" id="leaveNote" placeholder="請假原因（例如：有事、看醫生）">
     <button class="leave" onclick="handleLeave()">請假送出</button>
 
     <!-- 版本號顯示 -->
-    <div class="version">系統版本：v1.2</div>
+    <div class="version">系統版本：v1.3</div>
 </div>
 
 <script>
     // ⚠️ 你的 Apps Script 網址
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbznvHLmn_GUKehnVdI4LbDP0pokYK6Vkja62s2vEgU6nPsGhgzfoNDg4W3_vIVte2JxkA/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKFmIucZkq6dmRafKG11gdj28mT4SzMrZRF2G71hQF8YXrr8T9eAm2BnsWwSSAVT9wJQ/exec";
 
     // 👥 各員工的專屬打卡地點設定（半徑 300 公尺）
     const EMPLOYEE_LOCATIONS = {
