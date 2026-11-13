@@ -33,8 +33,13 @@
     <button class="checkout" onclick="handleCheckOut()">下班打卡</button>
     <hr>
     <h3>請假登記</h3>
-    <input type="text" id="leaveNote" placeholder="請假原因（例如：家裡有事）">
-    <button class="leave" onclick="handleLeave()">請假</button>
+    
+    <!-- 改為手動輸入假別的欄位 -->
+    <label>請輸入假別：</label>
+    <input type="text" id="leaveType" placeholder="例如：事假、病假、特休">
+
+    <input type="text" id="leaveNote" placeholder="請假原因（例如：家裡有事、看醫生）">
+    <button class="leave" onclick="handleLeave()">請假送出</button>
 </div>
 
 <script>
@@ -148,14 +153,15 @@
     function handleLeave() {
         let name = getSelectedName();
         if (!name) return;
+        
+        // 從文字框取得手動輸入的假別與原因
+        let leaveType = document.getElementById("leaveType").value.trim() || "事假"; // 如果沒填預設為事假
         let reason = document.getElementById("leaveNote").value.trim();
         
-        // 取得當下的時間與日期，記錄在備註中
-        let now = new Date();
-        let timeStr = now.toTimeString().split(' ')[0]; // 取得 HH:mm:ss
-        let finalNote = (reason ? reason : "事假") + " (登記時間: " + timeStr + ")";
+        // 組合成備註內容
+        let finalNote = leaveType + (reason ? " - " + reason : "");
 
-        sendData({ name: name, action: "leave", status: "事假", note: finalNote });
+        sendData({ name: name, action: "leave", status: leaveType, note: finalNote });
     }
 
     function sendData(payload) {
