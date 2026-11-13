@@ -25,27 +25,27 @@
     <select id="userName">
         <option value="">-- 請選擇名字 --</option>
         <option value="小楓">小楓</option>
-        <option value="維恩">維恩</option>
-        <option value="FANNIE">FANNIE</option>
+        <option value="維恩>維恩</option>
+        <option value="Fannie">Fannie</option>
     </select>
 
     <button onclick="handleCheckIn()">上班打卡 (GPS定位 + 時段判定)</button>
     <button class="checkout" onclick="handleCheckOut()">下班打卡</button>
     <hr>
-    <h3>事假登記</h3>
+    <h3>請假登記</h3>
     <input type="text" id="leaveNote" placeholder="請假原因（例如：家裡有事）">
-    <button class="leave" onclick="handleLeave()">登記事假</button>
+    <button class="leave" onclick="handleLeave()">請假</button>
 </div>
 
 <script>
     // ⚠️ 你的 Apps Script 網址
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzGdirz2IAWVXLj4aGSSp95KPuoDaE8CSaeadVjp7Dr76SB6XwxDi7z49zsQmcf13qh8A/exec";
 
-    // 👥 各員工的專屬打卡地點設定（半徑 200 公尺，完美涵蓋相鄰大樓與隔壁棟）
+    // 👥 各員工的專屬打卡地點設定（半徑 200 公尺）
     const EMPLOYEE_LOCATIONS = {
-        "小楓": { lat: 24.961425, lng: 121.224711, radius: 300 },
-        "維恩": { lat: 24.961425, lng: 121.224711, radius: 300 },
-        "FANNIE": { lat: 24.961425, lng: 121.224711, radius: 300 }
+        "周傳芸": { lat: 24.961425, lng: 121.224711, radius: 200 },
+        "維恩": { lat: 24.961425, lng: 121.224711, radius: 200 },
+        "Fannie": { lat: 24.961425, lng: 121.224711, radius: 200 }
     };
 
     function getSelectedName() {
@@ -93,8 +93,7 @@
             let actionType = "checkin";
             let note = "";
 
-            // 👑 只有「小楓」套用彈性轉事假規則
-            if (name === "小楓") {
+            if (name === "周傳芸") {
                 if (totalMinutes >= t930 && totalMinutes < t1000) {
                     let wantLeave = confirm("目前時間在 09:30 - 10:00 之間，是否要登記為「事假一小時」？\n\n[確定] 登記事假一小時\n[取消] 登記為遲到");
                     if (wantLeave) {
@@ -125,9 +124,7 @@
                 else if (totalMinutes > workStartTime) {
                     status = "正常(彈性)";
                 }
-            } 
-            // 👥 同事A與同事B的一般打卡邏輯
-            else {
+            } else {
                 if (totalMinutes > workStartTime) {
                     status = "遲到";
                 } else {
@@ -151,8 +148,14 @@
     function handleLeave() {
         let name = getSelectedName();
         if (!name) return;
-        let note = document.getElementById("leaveNote").value.trim();
-        sendData({ name: name, action: "leave", status: "事假", note: note || "事假" });
+        let reason = document.getElementById("leaveNote").value.trim();
+        
+        // 取得當下的時間與日期，記錄在備註中
+        let now = new Date();
+        let timeStr = now.toTimeString().split(' ')[0]; // 取得 HH:mm:ss
+        let finalNote = (reason ? reason : "事假") + " (登記時間: " + timeStr + ")";
+
+        sendData({ name: name, action: "leave", status: "事假", note: finalNote });
     }
 
     function sendData(payload) {
