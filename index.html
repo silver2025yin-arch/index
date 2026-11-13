@@ -95,6 +95,10 @@
     <button onclick="handleCheckIn()">上班打卡 (GPS定位 + 時段判定)</button>
     <button class="checkout" onclick="handleCheckOut()">下班打卡</button>
     <hr>
+    <!-- 新增：查詢按鈕與顯示區塊 -->
+    <button style="background: #607d8b;" onclick="handleQueryTime()">查詢今日上班時間</button>
+    <div id="queryResult" style="margin-top: 10px; font-weight: bold; color: #333; text-align: center;"></div>
+    
     <h3>請假登記</h3>
     
     <!-- 手動輸入假別的欄位 -->
@@ -105,12 +109,12 @@
     <button class="leave" onclick="handleLeave()">請假送出</button>
 
     <!-- 版本號顯示 -->
-    <div class="version">系統版本：v1.1</div>
+    <div class="version">系統版本：v1.2</div>
 </div>
 
 <script>
     // ⚠️ 你的 Apps Script 網址
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyhVDEQM8FyYA9qwUXtvMfa5QLOO34NmrN-2EP9wtvL5GZT8PSdKEDSk3BVptDndIyBJw/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbznvHLmn_GUKehnVdI4LbDP0pokYK6Vkja62s2vEgU6nPsGhgzfoNDg4W3_vIVte2JxkA/exec";
 
     // 👥 各員工的專屬打卡地點設定（半徑 300 公尺）
     const EMPLOYEE_LOCATIONS = {
@@ -274,6 +278,27 @@
                 Math.sin(dLon/2) * Math.sin(dLon/2);
         let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         return R * c;
+    }
+
+    function handleQueryTime() {
+        let name = getSelectedName();
+        if (!name) return;
+
+        showLoading();
+        let queryUrl = SCRIPT_URL + "?name=" + encodeURIComponent(name);
+
+        fetch(queryUrl)
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                let resultDiv = document.getElementById("queryResult");
+                resultDiv.innerText = "【" + name + "】今天的上班時間：" + data.checkInTime;
+            })
+            .catch(error => {
+                hideLoading();
+                alert("查詢失敗，請檢查網路連線。");
+                console.error(error);
+            });
     }
 </script>
 
