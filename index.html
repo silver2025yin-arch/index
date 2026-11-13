@@ -31,18 +31,15 @@
 </div>
 
 <script>
-    // ⚠️ 請把下方引號內的網址換成你的 Google Apps Script 部署網址
+    // ⚠️ 請換成你的 Apps Script 網址
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx27hnSwviU5XSSCmmvcaRKQHS9y_tq9SRuOrhxOwKSKYlKfat-TB-13ywWL2j0XBw5fg/exec";
-
-    // 固定的使用者姓名（因為目前只有你使用）
     const FIXED_NAME = "周傳芸";
 
-    // 公司座標 (請換成你們公司的經緯度)
+    // ⚠️ 請換成你們公司的經緯度與範圍
     const COMPANY_LAT = 24.961425; 
     const COMPANY_LNG = 121.224711;
     const ALLOWED_RADIUS = 100; // 允許範圍：100公尺內
 
-    // 網頁載入時自動顯示名字
     window.onload = function() {
         document.getElementById("userDisplay").innerText = "目前使用者：" + FIXED_NAME;
     };
@@ -65,7 +62,6 @@
                 return;
             }
 
-            // 檢查時間邏輯：上班 09:00，允許到 09:30
             let now = new Date();
             let hour = now.getHours();
             let minute = now.getMinutes();
@@ -76,13 +72,14 @@
 
             let status = "正常";
             let actionType = "checkin";
+            let note = "";
 
             if (totalMinutes > lateThreshold) {
                 let wantLeave = confirm("您目前已超過 09:30 達 30 分鐘以上，是否要直接改登記為「事假」？\n\n[確定] 登記為事假\n[取消] 登記為遲到打卡");
                 
                 if (wantLeave) {
-                    actionType = "leave";
                     status = "事假";
+                    note = "逾時未到轉事假";
                 } else {
                     status = "遲到";
                 }
@@ -90,7 +87,7 @@
                 status = "正常(彈性)";
             }
 
-            sendData({ name: FIXED_NAME, action: actionType, status: status, note: status === "事假" ? "逾時未到轉事假" : "" });
+            sendData({ name: FIXED_NAME, action: actionType, status: status, note: note });
 
         }, function(error) {
             alert("無法取得定位，請確認手機是否有開啟 GPS 權限！");
@@ -98,7 +95,7 @@
     }
 
     function handleCheckOut() {
-        sendData({ name: FIXED_NAME, action: "checkout", status: "下班打卡" });
+        sendData({ name: FIXED_NAME, action: "checkout", status: "下班打卡", note: "" });
     }
 
     function handleLeave() {
