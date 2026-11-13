@@ -82,7 +82,6 @@
     <select id="userName">
         <option value="">-- 請選擇名字 --</option>
         <option value="小楓">小楓</option>
-        <option value="周傳芸">周傳芸</option>
         <option value="維恩">維恩</option>
         <option value="Fannie">Fannie</option>
     </select>
@@ -106,7 +105,7 @@
     <button class="leave" onclick="handleLeave()">請假送出</button>
 
     <!-- 版本號顯示 -->
-    <div class="version">系統版本：v1.7</div>
+    <div class="version">系統版本：v1.8</div>
 </div>
 
 <script>
@@ -116,7 +115,6 @@
     // 👥 各員工的專屬打卡地點設定（半徑 300 公尺）
     const EMPLOYEE_LOCATIONS = {
         "小楓": { lat: 24.961425, lng: 121.224711, radius: 300 },
-        "周傳芸": { lat: 24.961425, lng: 121.224711, radius: 300 },
         "維恩": { lat: 24.961425, lng: 121.224711, radius: 300 },
         "Fannie": { lat: 24.961425, lng: 121.224711, radius: 300 }
     };
@@ -185,7 +183,7 @@
                 status = "國定假日上班";
             } else {
                 // 僅針對「小楓」或「周傳芸」進行 09:00 後的時段逾時判定
-                if (name === "小楓" || name === "周傳芸") {
+                if (name === "小楓") {
                     if (totalMinutes >= t930 && totalMinutes < t1000) {
                         let wantLeave = confirm("目前時間在 09:30 - 10:00 之間，是否要登記為「事假一小時」？\n\n[確定] 登記事假一小時\n[取消] 登記為遲到");
                         if (wantLeave) {
