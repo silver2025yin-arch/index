@@ -69,23 +69,24 @@
             
             let workStartTime = 9 * 60;          // 09:00 = 540分
             let t930 = 9 * 60 + 30;              // 09:30 = 570分
-            let t1000 = 10 * 60;                 // 10:00 = 600分
             let t1100 = 11 * 60;                 // 11:00 = 660分
 
             let status = "正常";
             let actionType = "checkin";
             let note = "";
 
-            // 依據打卡時間動態判定事假時數
-            if (totalMinutes >= t930 && totalMinutes <= t1000) {
-                let wantLeave = confirm("目前時間在 09:30 - 10:00 之間，是否要登記為「事假一小時」？\n\n[確定] 登記事假一小時\n[取消] 登記為遲到");
+            // 修正後的時段判定
+            if (totalMinutes >= t930 && totalMinutes < t1100) {
+                // 從 09:30 一直到 11:00 之前（包含 10 點整），都跳出詢問是否請假一小時
+                let wantLeave = confirm("目前時間在 09:30 - 11:00 之間，是否要登記為「事假一小時」？\n\n[確定] 登記事假一小時\n[取消] 登記為遲到");
                 if (wantLeave) {
                     status = "事假一小時";
-                    note = "09:30-10:00 逾時轉事假";
+                    note = "逾時轉事假一小時";
                 } else {
                     status = "遲到";
                 }
-            } else if (totalMinutes >= t1100 || (hour === 11)) {
+            } else if (totalMinutes >= t1100) {
+                // 11:00 以後
                 let wantLeave = confirm("目前時間已達 11:00 左右，是否要登記為「事假兩小時」？\n\n[確定] 登記事假兩小時\n[取消] 登記為遲到");
                 if (wantLeave) {
                     status = "事假兩小時";
