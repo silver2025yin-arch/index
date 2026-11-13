@@ -13,6 +13,7 @@
         button.leave { background: #2196F3; }
         button:active { opacity: 0.8; }
         label { font-weight: bold; font-size: 14px; color: #333; }
+        .version { text-align: right; font-size: 12px; color: #888; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -34,12 +35,15 @@
     <hr>
     <h3>請假登記</h3>
     
-    <!-- 改為手動輸入假別的欄位 -->
+    <!-- 手動輸入假別的欄位 -->
     <label>請輸入假別：</label>
     <input type="text" id="leaveType" placeholder="例如：事假、病假、特休">
 
     <input type="text" id="leaveNote" placeholder="請假原因（例如：家裡有事、看醫生）">
     <button class="leave" onclick="handleLeave()">請假送出</button>
+
+    <!-- 版本號顯示 -->
+    <div class="version">系統版本：v1.1</div>
 </div>
 
 <script>
@@ -154,13 +158,14 @@
         let name = getSelectedName();
         if (!name) return;
         
-        // 從文字框取得手動輸入的假別與原因
-        let leaveType = document.getElementById("leaveType").value.trim() || "事假"; // 如果沒填預設為事假
-        let reason = document.getElementById("leaveNote").value.trim();
+        // 取得輸入的假別（若沒填則預設為事假）
+        let leaveTypeInput = document.getElementById("leaveType").value.trim();
+        let leaveType = leaveTypeInput !== "" ? leaveTypeInput : "事假";
         
-        // 組合成備註內容
-        let finalNote = leaveType + (reason ? " - " + reason : "");
+        let reason = document.getElementById("leaveNote").value.trim();
+        let finalNote = reason ? "原因：" + reason : "";
 
+        // 確保 action 傳送 "leave"，status 傳送輸入的假別
         sendData({ name: name, action: "leave", status: leaveType, note: finalNote });
     }
 
