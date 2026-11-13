@@ -43,18 +43,18 @@
     <button class="leave" onclick="handleLeave()">請假送出</button>
 
     <!-- 版本號顯示 -->
-    <div class="version">系統版本：v1.1</div>
+    <div class="version">系統版本：v1.2</div>
 </div>
 
 <script>
     // ⚠️ 你的 Apps Script 網址
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzGdirz2IAWVXLj4aGSSp95KPuoDaE8CSaeadVjp7Dr76SB6XwxDi7z49zsQmcf13qh8A/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwH8LniGtDaFTSluXYWOcJt4il-WtOx-QcocneVbkM2r4VZQbTKYgROMxIbIIrLXNNQeg/exec";
 
     // 👥 各員工的專屬打卡地點設定（半徑 200 公尺）
     const EMPLOYEE_LOCATIONS = {
-        "周傳芸": { lat: 24.961425, lng: 121.224711, radius: 200 },
-        "維恩": { lat: 24.961425, lng: 121.224711, radius: 200 },
-        "Fannie": { lat: 24.961425, lng: 121.224711, radius: 200 }
+        "周傳芸": { lat: 24.961425, lng: 121.224711, radius: 300 },
+        "維恩": { lat: 24.961425, lng: 121.224711, radius: 300 },
+        "Fannie": { lat: 24.961425, lng: 121.224711, radius: 300 }
     };
 
     function getSelectedName() {
