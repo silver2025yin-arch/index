@@ -14,9 +14,43 @@
         button:active { opacity: 0.8; }
         label { font-weight: bold; font-size: 14px; color: #333; }
         .version { text-align: right; font-size: 12px; color: #888; margin-top: 15px; }
+
+        /* 載入中遮罩樣式 */
+        #loadingOverlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            flex-direction: column;
+        }
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
+
+<!-- 載入中畫面 -->
+<div id="loadingOverlay">
+    <div class="spinner"></div>
+    <div>系統正在處理中，請稍候...</div>
+</div>
 
 <div class="card">
     <h2>公司打卡系統</h2>
@@ -26,6 +60,7 @@
     <select id="userName">
         <option value="">-- 請選擇名字 --</option>
         <option value="小楓">小楓</option>
+        <option value="周傳芸">周傳芸</option>
         <option value="維恩">維恩</option>
         <option value="Fannie">Fannie</option>
     </select>
@@ -43,19 +78,28 @@
     <button class="leave" onclick="handleLeave()">請假送出</button>
 
     <!-- 版本號顯示 -->
-    <div class="version">系統版本：v1.2</div>
+    <div class="version">系統版本：v1.3</div>
 </div>
 
 <script>
     // ⚠️ 你的 Apps Script 網址
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwH8LniGtDaFTSluXYWOcJt4il-WtOx-QcocneVbkM2r4VZQbTKYgROMxIbIIrLXNNQeg/exec";
 
-    // 👥 各員工的專屬打卡地點設定（半徑 200 公尺）
+    // 👥 各員工的專屬打卡地點設定（半徑 300 公尺）
     const EMPLOYEE_LOCATIONS = {
+        "小楓": { lat: 24.961425, lng: 121.224711, radius: 300 },
         "周傳芸": { lat: 24.961425, lng: 121.224711, radius: 300 },
         "維恩": { lat: 24.961425, lng: 121.224711, radius: 300 },
         "Fannie": { lat: 24.961425, lng: 121.224711, radius: 300 }
     };
+
+    function showLoading() {
+        document.getElementById("loadingOverlay").style.display = "flex";
+    }
+
+    function hideLoading() {
+        document.getElementById("loadingOverlay").style.display = "none";
+    }
 
     function getSelectedName() {
         let select = document.getElementById("userName");
@@ -71,12 +115,14 @@
         let name = getSelectedName();
         if (!name) return;
 
-        let targetLoc = EMPLOYEE_LOCATIONS[name] || { lat: 24.961425, lng: 121.224711, radius: 200 };
+        let targetLoc = EMPLOYEE_LOCATIONS[name] || { lat: 24.961425, lng: 121.224711, radius: 300 };
 
         if (!navigator.geolocation) {
             alert("您的瀏覽器不支援定位功能");
             return;
         }
+
+        showLoading();
 
         navigator.geolocation.getCurrentPosition(function(position) {
             let userLat = position.coords.latitude;
@@ -84,6 +130,7 @@
             let distance = calculateDistance(userLat, userLng, targetLoc.lat, targetLoc.lng);
 
             if (distance > targetLoc.radius) {
+                hideLoading();
                 alert("打卡失敗：您目前距離指定地點約 " + Math.round(distance) + " 公尺，超出 " + targetLoc.radius + " 公尺的打卡範圍！");
                 return;
             }
@@ -102,7 +149,8 @@
             let actionType = "checkin";
             let note = "";
 
-            if (name === "周傳芸") {
+            // 僅針對「小楓」或「周傳芸」進行 09:00 後的時段逾時判定，其他人一律視為「正常」
+            if (name === "小楓" || name === "周傳芸") {
                 if (totalMinutes >= t930 && totalMinutes < t1000) {
                     let wantLeave = confirm("目前時間在 09:30 - 10:00 之間，是否要登記為「事假一小時」？\n\n[確定] 登記事假一小時\n[取消] 登記為遲到");
                     if (wantLeave) {
@@ -134,16 +182,13 @@
                     status = "正常(彈性)";
                 }
             } else {
-                if (totalMinutes > workStartTime) {
-                    status = "遲到";
-                } else {
-                    status = "正常";
-                }
+                status = "正常";
             }
             
             sendData({ name: name, action: actionType, status: status, note: note });
 
         }, function(error) {
+            hideLoading();
             alert("無法取得定位，請確認手機是否有開啟 GPS 權限！");
         }, { enableHighAccuracy: true });
     }
@@ -151,6 +196,7 @@
     function handleCheckOut() {
         let name = getSelectedName();
         if (!name) return;
+        showLoading();
         sendData({ name: name, action: "checkout", status: "下班打卡", note: "" });
     }
 
@@ -158,14 +204,13 @@
         let name = getSelectedName();
         if (!name) return;
         
-        // 取得輸入的假別（若沒填則預設為事假）
         let leaveTypeInput = document.getElementById("leaveType").value.trim();
         let leaveType = leaveTypeInput !== "" ? leaveTypeInput : "事假";
         
         let reason = document.getElementById("leaveNote").value.trim();
         let finalNote = reason ? "原因：" + reason : "";
 
-        // 確保 action 傳送 "leave"，status 傳送輸入的假別
+        showLoading();
         sendData({ name: name, action: "leave", status: leaveType, note: finalNote });
     }
 
@@ -176,9 +221,11 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
         }).then(() => {
+            hideLoading();
             alert("動作已成功送出！");
             location.reload();
         }).catch(error => {
+            hideLoading();
             alert("送出失敗，請檢查網路連線。");
             console.error(error);
         });
