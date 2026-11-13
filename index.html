@@ -14,6 +14,28 @@
         button:active { opacity: 0.8; }
         label { font-weight: bold; font-size: 14px; color: #333; }
         .version { text-align: right; font-size: 12px; color: #888; margin-top: 15px; }
+        
+        /* 國定假日加班勾選框樣式 */
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            background: #fff8e1;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ffe082;
+        }
+        .checkbox-container input {
+            width: 20px;
+            height: 20px;
+            margin: 0 10px 0 0;
+            cursor: pointer;
+        }
+        .checkbox-container label {
+            cursor: pointer;
+            color: #d84315;
+            margin: 0;
+        }
 
         /* 載入中遮罩樣式 */
         #loadingOverlay {
@@ -65,6 +87,12 @@
         <option value="Fannie">Fannie</option>
     </select>
 
+    <!-- 新增：國定假日加班勾選框 -->
+    <div class="checkbox-container">
+        <input type="checkbox" id="holidayOvertime">
+        <label for="holidayOvertime">國定假日上班</label>
+    </div>
+
     <button onclick="handleCheckIn()">上班打卡 (GPS定位 + 時段判定)</button>
     <button class="checkout" onclick="handleCheckOut()">下班打卡</button>
     <hr>
@@ -78,12 +106,12 @@
     <button class="leave" onclick="handleLeave()">請假送出</button>
 
     <!-- 版本號顯示 -->
-    <div class="version">系統版本：v1.6</div>
+    <div class="version">系統版本：v1.7</div>
 </div>
 
 <script>
     // ⚠️ 你的 Apps Script 網址
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyS0ybs9npwCE--uI_A2nVfdPRM-fvcw7t5ok1Ga_sRgbQhN3qJb0iZ7xHGpYIsa18z/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwH8LniGtDaFTSluXYWOcJt4il-WtOx-QcocneVbkM2r4VZQbTKYgROMxIbIIrLXNNQeg/exec";
 
     // 👥 各員工的專屬打卡地點設定（半徑 300 公尺）
     const EMPLOYEE_LOCATIONS = {
@@ -114,6 +142,9 @@
     function handleCheckIn() {
         let name = getSelectedName();
         if (!name) return;
+
+        // 檢查是否有勾選「國定假日上班」
+        let isHolidayOvertime = document.getElementById("holidayOvertime").checked;
 
         let targetLoc = EMPLOYEE_LOCATIONS[name] || { lat: 24.961425, lng: 121.224711, radius: 300 };
 
@@ -149,40 +180,45 @@
             let actionType = "checkin";
             let note = "";
 
-            // 僅針對「小楓」或「周傳芸」進行 09:00 後的時段逾時判定，其他人一律視為「正常」
-            if (name === "小楓" || name === "周傳芸") {
-                if (totalMinutes >= t930 && totalMinutes < t1000) {
-                    let wantLeave = confirm("目前時間在 09:30 - 10:00 之間，是否要登記為「事假一小時」？\n\n[確定] 登記事假一小時\n[取消] 登記為遲到");
-                    if (wantLeave) {
-                        status = "事假一小時";
-                        note = "09:30-10:00 逾時轉事假一小時";
-                    } else {
-                        status = "遲到";
-                    }
-                } 
-                else if (totalMinutes >= t1000 && totalMinutes < t1100) {
-                    let wantLeave = confirm("目前時間在 10:00 - 11:00 之間，是否要登記為「事假兩小時」？\n\n[確定] 登記事假兩小時\n[取消] 登記為遲到");
-                    if (wantLeave) {
-                        status = "事假兩小時";
-                        note = "10:00-11:00 逾時轉事假兩小時";
-                    } else {
-                        status = "遲到";
-                    }
-                } 
-                else if (totalMinutes >= t1100) {
-                    let wantLeave = confirm("目前時間已超過 11:00，是否要登記為事假？\n\n[確定] 登記事假\n[取消] 登記為遲到");
-                    if (wantLeave) {
-                        status = "事假";
-                        note = "11:00後逾時轉事假";
-                    } else {
-                        status = "遲到";
-                    }
-                } 
-                else if (totalMinutes > workStartTime) {
-                    status = "正常(彈性)";
-                }
+            // 如果有勾選國定假日上班，狀態直接設為「國定假日上班」
+            if (isHolidayOvertime) {
+                status = "國定假日上班";
             } else {
-                status = "正常";
+                // 僅針對「小楓」或「周傳芸」進行 09:00 後的時段逾時判定
+                if (name === "小楓" || name === "周傳芸") {
+                    if (totalMinutes >= t930 && totalMinutes < t1000) {
+                        let wantLeave = confirm("目前時間在 09:30 - 10:00 之間，是否要登記為「事假一小時」？\n\n[確定] 登記事假一小時\n[取消] 登記為遲到");
+                        if (wantLeave) {
+                            status = "事假一小時";
+                            note = "09:30-10:00 逾時轉事假一小時";
+                        } else {
+                            status = "遲到";
+                        }
+                    } 
+                    else if (totalMinutes >= t1000 && totalMinutes < t1100) {
+                        let wantLeave = confirm("目前時間在 10:00 - 11:00 之間，是否要登記為「事假兩小時」？\n\n[確定] 登記事假兩小時\n[取消] 登記為遲到");
+                        if (wantLeave) {
+                            status = "事假兩小時";
+                            note = "10:00-11:00 逾時轉事假兩小時";
+                        } else {
+                            status = "遲到";
+                        }
+                    } 
+                    else if (totalMinutes >= t1100) {
+                        let wantLeave = confirm("目前時間已超過 11:00，是否要登記為事假？\n\n[確定] 登記事假\n[取消] 登記為遲到");
+                        if (wantLeave) {
+                            status = "事假";
+                            note = "11:00後逾時轉事假";
+                        } else {
+                            status = "遲到";
+                        }
+                    } 
+                    else if (totalMinutes > workStartTime) {
+                        status = "正常(彈性)";
+                    }
+                } else {
+                    status = "正常";
+                }
             }
             
             sendData({ name: name, action: actionType, status: status, note: note });
