@@ -13,62 +13,17 @@
         button.leave { background: #2196F3; }
         button:active { opacity: 0.8; }
         label { font-weight: bold; font-size: 14px; color: #333; }
+        .checkbox-container { display: flex; align-items: center; margin-bottom: 15px; background: #fff8e1; padding: 10px; border-radius: 4px; border: 1px solid #ffe082; }
+        .checkbox-container input { width: 20px; height: 20px; margin: 0 10px 0 0; cursor: pointer; }
+        .checkbox-container label { cursor: pointer; color: #d84315; margin: 0; }
         .version { text-align: right; font-size: 12px; color: #888; margin-top: 15px; }
-        
-        /* 國定假日加班勾選框樣式 */
-        .checkbox-container {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-            background: #fff8e1;
-            padding: 10px;
-            border-radius: 4px;
-            border: 1px solid #ffe082;
-        }
-        .checkbox-container input {
-            width: 20px;
-            height: 20px;
-            margin: 0 10px 0 0;
-            cursor: pointer;
-        }
-        .checkbox-container label {
-            cursor: pointer;
-            color: #d84315;
-            margin: 0;
-        }
-
-        /* 載入中遮罩樣式 */
-        #loadingOverlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 9999;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            font-size: 20px;
-            font-weight: bold;
-            flex-direction: column;
-        }
-        .spinner {
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #3498db;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin-bottom: 15px;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        #loadingOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center; color: white; font-size: 20px; font-weight: bold; flex-direction: column; }
+        .spinner { border: 5px solid #f3f3f3; border-top: 5px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-<!-- 載入中畫面 -->
 <div id="loadingOverlay">
     <div class="spinner"></div>
     <div>系統正在處理中，請稍候...</div>
@@ -77,8 +32,8 @@
 <div class="card">
     <h2>公司打卡系統</h2>
     
-    <!-- 員工姓名下拉選單 -->
-    <label>請選擇您的姓名：</label>
+    <!-- 員工姓名下拉選單或鎖定顯示 -->
+    <label>目前使用者：</label>
     <select id="userName">
         <option value="">-- 請選擇名字 --</option>
         <option value="小楓">小楓</option>
@@ -86,7 +41,6 @@
         <option value="Fannie">Fannie</option>
     </select>
 
-    <!-- 新增：國定假日加班勾選框 -->
     <div class="checkbox-container">
         <input type="checkbox" id="holidayOvertime">
         <label for="holidayOvertime">國定假日上班</label>
@@ -95,41 +49,41 @@
     <button onclick="handleCheckIn()">上班打卡 (GPS定位 + 時段判定)</button>
     <button class="checkout" onclick="handleCheckOut()">下班打卡</button>
     <hr>
-    <!-- 新增：查詢按鈕與顯示區塊 -->
+    
     <button style="background: #607d8b;" onclick="handleQueryTime()">查詢今日上班時間</button>
     <div id="queryResult" style="margin-top: 10px; font-weight: bold; color: #333; text-align: center;"></div>
-    
-    <h3>請假登記</h3>
-    
-    <!-- 手動輸入假別的欄位 -->
-    <label>請輸入假別：</label>
-    <input type="text" id="leaveType" placeholder="例如：事假、病假、特休">
 
+    <h3>請假登記</h3>
+    <input type="text" id="leaveType" placeholder="例如：事假、病假、特休">
     <input type="text" id="leaveNote" placeholder="請假原因（例如：有事、看醫生）">
     <button class="leave" onclick="handleLeave()">請假送出</button>
 
-    <!-- 版本號顯示 -->
-    <div class="version">系統版本：v1.3</div>
+    <div class="version">系統版本:v1.5</div>
 </div>
 
 <script>
-    // ⚠️ 你的 Apps Script 網址
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKFmIucZkq6dmRafKG11gdj28mT4SzMrZRF2G71hQF8YXrr8T9eAm2BnsWwSSAVT9wJQ/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKFmlucZkq6dmRafKG11gdj28mT4SzMrZRF2G71hQF8YXrr8T9eAm2BnsWwSSAVT9wJQ/exec";
 
-    // 👥 各員工的專屬打卡地點設定（半徑 300 公尺）
     const EMPLOYEE_LOCATIONS = {
         "小楓": { lat: 24.961425, lng: 121.224711, radius: 100 },
         "維恩": { lat: 24.961425, lng: 121.224711, radius: 100 },
         "Fannie": { lat: 24.961425, lng: 121.224711, radius: 100 }
     };
 
-    function showLoading() {
-        document.getElementById("loadingOverlay").style.display = "flex";
-    }
+    // 頁面載入時檢查這支手機是否已經綁定過名字
+    window.onload = function() {
+        let savedName = localStorage.getItem("company_user_name");
+        let select = document.getElementById("userName");
+        
+        if (savedName) {
+            // 如果已經綁定過，直接把選單鎖死為該名字
+            select.innerHTML = `<option value="${savedName}">${savedName} (已綁定此手機)</option>`;
+            select.disabled = true;
+        }
+    };
 
-    function hideLoading() {
-        document.getElementById("loadingOverlay").style.display = "none";
-    }
+    function showLoading() { document.getElementById("loadingOverlay").style.display = "flex"; }
+    function hideLoading() { document.getElementById("loadingOverlay").style.display = "none"; }
 
     function getSelectedName() {
         let select = document.getElementById("userName");
@@ -138,6 +92,10 @@
             alert("請先選擇您的姓名！");
             return null;
         }
+        // 第一次成功選取後，自動幫這支手機記住並鎖定
+        if (!localStorage.getItem("company_user_name")) {
+            localStorage.setItem("company_user_name", name);
+        }
         return name;
     }
 
@@ -145,10 +103,8 @@
         let name = getSelectedName();
         if (!name) return;
 
-        // 檢查是否有勾選「國定假日上班」
         let isHolidayOvertime = document.getElementById("holidayOvertime").checked;
-
-        let targetLoc = EMPLOYEE_LOCATIONS[name] || { lat: 24.961425, lng: 121.224711, radius: 300 };
+        let targetLoc = EMPLOYEE_LOCATIONS[name] || { lat: 24.961425, lng: 121.224711, radius: 100 };
 
         if (!navigator.geolocation) {
             alert("您的瀏覽器不支援定位功能");
@@ -156,7 +112,6 @@
         }
 
         showLoading();
-
         navigator.geolocation.getCurrentPosition(function(position) {
             let userLat = position.coords.latitude;
             let userLng = position.coords.longitude;
@@ -173,53 +128,36 @@
             let minute = now.getMinutes();
             let totalMinutes = hour * 60 + minute; 
             
-            let workStartTime = 9 * 60;          // 09:00 = 540分
-            let t930 = 9 * 60 + 30;              // 09:30 = 570分
-            let t1000 = 10 * 60;                 // 10:00 = 600分
-            let t1100 = 11 * 60;                 // 11:00 = 660分
+            let workStartTime = 9 * 60;          
+            let t930 = 9 * 60 + 30;              
+            let t1000 = 10 * 60;                 
+            let t1100 = 11 * 60;                 
 
             let status = "正常";
             let actionType = "checkin";
             let note = "";
 
-            // 如果有勾選國定假日上班，狀態直接設為「國定假日上班」
             if (isHolidayOvertime) {
                 status = "國定假日上班";
             } else {
-                // 僅針對「小楓」或「周傳芸」進行 09:00 後的時段逾時判定
                 if (name === "小楓") {
                     if (totalMinutes >= t930 && totalMinutes < t1000) {
                         let wantLeave = confirm("目前時間在 09:30 - 10:00 之間，是否要登記為「事假一小時」？\n\n[確定] 登記事假一小時\n[取消] 登記為遲到");
-                        if (wantLeave) {
-                            status = "事假一小時";
-                            note = "09:30-10:00 逾時轉事假一小時";
-                        } else {
-                            status = "遲到";
-                        }
-                    } 
-                    else if (totalMinutes >= t1000 && totalMinutes < t1100) {
+                        if (wantLeave) { status = "事假一小時"; note = "09:30-10:00 逾時轉事假一小時"; }
+                        else { status = "遲到"; }
+                    } else if (totalMinutes >= t1000 && totalMinutes < t1100) {
                         let wantLeave = confirm("目前時間在 10:00 - 11:00 之間，是否要登記為「事假兩小時」？\n\n[確定] 登記事假兩小時\n[取消] 登記為遲到");
-                        if (wantLeave) {
-                            status = "事假兩小時";
-                            note = "10:00-11:00 逾時轉事假兩小時";
-                        } else {
-                            status = "遲到";
-                        }
-                    } 
-                    else if (totalMinutes >= t1100) {
+                        if (wantLeave) { status = "事假兩小時"; note = "10:00-11:00 逾時轉事假兩小時"; }
+                        else { status = "遲到"; }
+                    } else if (totalMinutes >= t1100) {
                         let wantLeave = confirm("目前時間已超過 11:00，是否要登記為事假？\n\n[確定] 登記事假\n[取消] 登記為遲到");
-                        if (wantLeave) {
-                            status = "事假";
-                            note = "11:00後逾時轉事假";
-                        } else {
-                            status = "遲到";
-                        }
-                    } 
-                    else if (totalMinutes > workStartTime) {
+                        if (wantLeave) { status = "事假"; note = "11:00後逾時轉事假"; }
+                        else { status = "遲oid"; }
+                    } else if (totalMinutes > workStartTime) {
                         status = "正常(彈性)";
                     }
                 } else {
-                    status = "正常";
+                    status = totalMinutes > workStartTime ? "遲到" : "正常";
                 }
             }
             
@@ -241,15 +179,35 @@
     function handleLeave() {
         let name = getSelectedName();
         if (!name) return;
-        
         let leaveTypeInput = document.getElementById("leaveType").value.trim();
         let leaveType = leaveTypeInput !== "" ? leaveTypeInput : "事假";
-        
         let reason = document.getElementById("leaveNote").value.trim();
-        let finalNote = reason ? "原因：" + reason : "";
+        
+        let now = new Date();
+        let timeStr = now.toTimeString().split(' ')[0];
+        let finalNote = (reason ? "原因:" + reason : "") + " (登記時間: " + timeStr + ")";
 
         showLoading();
         sendData({ name: name, action: "leave", status: leaveType, note: finalNote });
+    }
+
+    function handleQueryTime() {
+        let name = getSelectedName();
+        if (!name) return;
+        showLoading();
+        let queryUrl = SCRIPT_URL + "?name=" + encodeURIComponent(name);
+        fetch(queryUrl)
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            let resultDiv = document.getElementById("queryResult");
+            resultDiv.innerText = "【" + name + "】今天的上班時間: " + data.checkInTime;
+        })
+        .catch(error => {
+            hideLoading();
+            alert("查詢失敗，請檢查網路連線。");
+            console.error(error);
+        });
     }
 
     function sendData(payload) {
@@ -278,27 +236,6 @@
                 Math.sin(dLon/2) * Math.sin(dLon/2);
         let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         return R * c;
-    }
-
-    function handleQueryTime() {
-        let name = getSelectedName();
-        if (!name) return;
-
-        showLoading();
-        let queryUrl = SCRIPT_URL + "?name=" + encodeURIComponent(name);
-
-        fetch(queryUrl)
-            .then(response => response.json())
-            .then(data => {
-                hideLoading();
-                let resultDiv = document.getElementById("queryResult");
-                resultDiv.innerText = "【" + name + "】今天的上班時間：" + data.checkInTime;
-            })
-            .catch(error => {
-                hideLoading();
-                alert("查詢失敗，請檢查網路連線。");
-                console.error(error);
-            });
     }
 </script>
 
