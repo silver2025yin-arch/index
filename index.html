@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>個人專屬打卡系統</title>
+    <style>
+        body { font-family: sans-serif; max-width: 400px; margin: 40px auto; padding: 20px; background: #f9f9f9; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .user-tag { background: #e3f2fd; color: #0d47a1; padding: 10px; border-radius: 4px; font-weight: bold; margin-bottom: 15px; text-align: center; }
+        input, button { width: 100%; padding: 12px; margin-top: 10px; margin-bottom: 15px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #4CAF50; color: white; border: none; font-size: 16px; cursor: pointer; }
+        button.checkout { background: #ff9800; }
+        button.leave { background: #2196F3; }
+        button:active { opacity: 0.8; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>個人打卡系統</h2>
+    <div class="user-tag" id="userDisplay">目前使用者：載入中...</div>
+    <p style="font-size: 13px; color: #666; margin-top: 0;">規定時間：09:00 - 18:00 (超過09:30打卡可選擇轉為事假)</p>
+
+    <button onclick="handleCheckIn()">上班打卡 (GPS定位 + 逾時判定)</button>
+    <button class="checkout" onclick="handleCheckOut()">下班打卡</button>
+    <hr>
+    <h3>事假登記</h3>
+    <input type="text" id="leaveNote" placeholder="請假原因（例如：家裡有事）">
+    <button class="leave" onclick="handleLeave()">登記事假</button>
+</div>
+
+<script>
+    // ⚠️ 請把下方引號內的網址換成你的 Google Apps Script 部署網址
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyHYEajxjTa35wZhuqpkjA_ZHL-y11r2GTnk_4fDgJ6fQCs74XNaIoSFKAo-Q8068B1fA/exec";
+
+    // 固定的使用者姓名（因為目前只有你使用）
+    const FIXED_NAME = "周傳芸";
+
+    // 公司座標 (請換成你們公司的經緯度)
+    const COMPANY_LAT = 24.9531; 
+    const COMPANY_LNG = 121.2254;
+    const ALLOWED_RADIUS = 100; // 允許範圍：100公尺內
+
+    // 網頁載入時自動顯示名字
+    window.onload = function() {
+        document.getElementById("userDisplay").innerText = "目前使用者：" + FIXED_NAME;
+    };
+
+    function handleCheckIn() {
+        if (!navigator.geolocation) {
+            alert("您的瀏覽器不支援定位功能");
+            return;
+        }
+
+        alert("正在驗證您的 GPS 定位，請稍候...");
+
+        navigator.geolocation.getCurrentPosition(function(position) {
+            let userLat = position.coords.latitude;
+            let userLng = position.coords.longitude;
+            let distance = calculateDistance(userLat, userLng, COMPANY_LAT, COMPANY_LNG);
+
+            if (distance > ALLOWED_RADIUS) {
+                alert("打卡失敗：您目前距離公司約 " + Math.round(distance) + " 公尺，超出打卡範圍！");
+                return;
+            }
+
+            // 檢查時間邏輯：上班 09:00，允許到 09:30
+            let now = new Date();
+            let hour = now.getHours();
+            let minute = now.getMinutes();
+            let totalMinutes = hour * 60 + minute; 
+            
+            let workStartTime = 9 * 60;     
+            let lateThreshold = 9 * 60 + 30; 
+
+            let status = "正常";
+            let actionType = "checkin";
+
+            if (totalMinutes > lateThreshold) {
+                let wantLeave = confirm("您目前已超過 09:30 達 30 分鐘以上，是否要直接改登記為「事假」？\n\n[確定] 登記為事假\n[取消] 登記為遲到打卡");
+                
+                if (wantLeave) {
+                    actionType = "leave";
+                    status = "事假";
+                } else {
+                    status = "遲到";
+                }
+            } else if (totalMinutes > workStartTime) {
+                status = "正常(彈性)";
+            }
+
+            sendData({ name: FIXED_NAME, action: actionType, status: status, note: status === "事假" ? "逾時未到轉事假" : "" });
+
+        }, function(error) {
+            alert("無法取得定位，請確認手機是否有開啟 GPS 權限！");
+        }, { enableHighAccuracy: true });
+    }
+
+    function handleCheckOut() {
+        sendData({ name: FIXED_NAME, action: "checkout", status: "下班打卡" });
+    }
+
+    function handleLeave() {
+        let note = document.getElementById("leaveNote").value.trim();
+        sendData({ name: FIXED_NAME, action: "leave", status: "事假", note: note || "事假" });
+    }
+
+    function sendData(payload) {
+        fetch(SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        }).then(() => {
+            alert("動作已成功送出！");
+            location.reload();
+        }).catch(error => {
+            alert("送出失敗，請檢查網路連線。");
+            console.error(error);
+        });
+    }
+
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        let R = 6371000;
+        let dLat = (lat2 - lat1) * Math.PI / 180;
+        let dLon = (lon2 - lon1) * Math.PI / 180;
+        let a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+        let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+</script>
+
+</body>
+</html>
