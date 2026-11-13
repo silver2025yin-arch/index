@@ -3,24 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>個人專屬打卡系統</title>
+    <title>公司打卡與請假系統</title>
     <style>
         body { font-family: sans-serif; max-width: 400px; margin: 40px auto; padding: 20px; background: #f9f9f9; }
         .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .user-tag { background: #e3f2fd; color: #0d47a1; padding: 10px; border-radius: 4px; font-weight: bold; margin-bottom: 15px; text-align: center; }
-        input, button { width: 100%; padding: 12px; margin-top: 10px; margin-bottom: 15px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px; }
+        select, input, button { width: 100%; padding: 12px; margin-top: 10px; margin-bottom: 15px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px; }
         button { background: #4CAF50; color: white; border: none; font-size: 16px; cursor: pointer; }
         button.checkout { background: #ff9800; }
         button.leave { background: #2196F3; }
         button:active { opacity: 0.8; }
+        label { font-weight: bold; font-size: 14px; color: #333; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>個人打卡系統</h2>
-    <div class="user-tag" id="userDisplay">目前使用者：載入中...</div>
-    <p style="font-size: 13px; color: #666; margin-top: 0;">基準 09:00 | 09:30-10:00 轉事假1小時 | 11:00 轉事假2小時</p>
+    <h2>公司打卡系統</h2>
+    
+    <!-- 員工姓名下拉選單 -->
+    <label>請選擇您的姓名：</label>
+    <select id="userName">
+        <option value="">-- 請選擇名字 --</option>
+        <option value="小楓">小楓</option>
+        <option value="維恩">維恩</option>
+        <option value="FANNIE">FANNIE</option>
+    </select>
+
+    <p style="font-size: 12px; color: #666; margin-top: 0;">基準 09:00 (周傳芸專用：09:30-10:00事假1hr | 10:00-11:00事假2hr)</p>
 
     <button onclick="handleCheckIn()">上班打卡 (GPS定位 + 時段判定)</button>
     <button class="checkout" onclick="handleCheckOut()">下班打卡</button>
@@ -31,37 +40,48 @@
 </div>
 
 <script>
-    // ⚠️ 請換成你的 Apps Script 網址
+    // ⚠️ 你的 Apps Script 網址
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzGdirz2IAWVXLj4aGSSp95KPuoDaE8CSaeadVjp7Dr76SB6XwxDi7z49zsQmcf13qh8A/exec";
-    const FIXED_NAME = "周傳芸";
 
-    // ⚠️ 請換成你們公司的經緯度與範圍
-    const COMPANY_LAT = 24.961425; 
-    const COMPANY_LNG = 121.224711;
-    const ALLOWED_RADIUS = 100; // 允許範圍：100公尺內
-
-    window.onload = function() {
-        document.getElementById("userDisplay").innerText = "目前使用者：" + FIXED_NAME;
+    // 👥 各員工的專屬打卡地點設定（半徑 200 公尺，完美涵蓋相鄰大樓與隔壁棟）
+    const EMPLOYEE_LOCATIONS = {
+        "小楓": { lat: 24.961425, lng: 121.224711, radius: 300 },
+        "維恩": { lat: 24.961425, lng: 121.224711, radius: 300 },
+        "FANNIE": { lat: 24.961425, lng: 121.224711, radius: 300 }
     };
 
-function handleCheckIn() {
+    function getSelectedName() {
+        let select = document.getElementById("userName");
+        let name = select.value;
+        if (!name) {
+            alert("請先選擇您的姓名！");
+            return null;
+        }
+        return name;
+    }
+
+    function handleCheckIn() {
+        let name = getSelectedName();
+        if (!name) return;
+
+        let targetLoc = EMPLOYEE_LOCATIONS[name] || { lat: 24.961425, lng: 121.224711, radius: 200 };
+
         if (!navigator.geolocation) {
             alert("您的瀏覽器不支援定位功能");
             return;
         }
 
-        // 拿掉原本會停住的 alert，直接在背景背景抓取 GPS
         navigator.geolocation.getCurrentPosition(function(position) {
             let userLat = position.coords.latitude;
             let userLng = position.coords.longitude;
-            let distance = calculateDistance(userLat, userLng, COMPANY_LAT, COMPANY_LNG);
+            let distance = calculateDistance(userLat, userLng, targetLoc.lat, targetLoc.lng);
 
-            if (distance > ALLOWED_RADIUS) {
-                alert("打卡失敗：您目前距離公司約 " + Math.round(distance) + " 公尺，超出打卡範圍！");
+            if (distance > targetLoc.radius) {
+                alert("打卡失敗：您目前距離指定地點約 " + Math.round(distance) + " 公尺，超出 " + targetLoc.radius + " 公尺的打卡範圍！");
                 return;
             }
 
-           let now = new Date();
+            let now = new Date();
             let hour = now.getHours();
             let minute = now.getMinutes();
             let totalMinutes = hour * 60 + minute; 
@@ -75,54 +95,66 @@ function handleCheckIn() {
             let actionType = "checkin";
             let note = "";
 
-            // 1. 09:30 ~ 09:59 (事假一小時)
-            if (totalMinutes >= t930 && totalMinutes < t1000) {
-                let wantLeave = confirm("目前時間在 09:30 - 10:00 之間，是否要登記為「事假一小時」？\n\n[確定] 登記事假一小時\n[取消] 登記為遲到");
-                if (wantLeave) {
-                    status = "事假一小時";
-                    note = "09:30-10:00 逾時轉事假一小時";
-                } else {
-                    status = "遲到";
+            // 👑 只有「小楓」套用彈性轉事假規則
+            if (name === "小楓") {
+                if (totalMinutes >= t930 && totalMinutes < t1000) {
+                    let wantLeave = confirm("目前時間在 09:30 - 10:00 之間，是否要登記為「事假一小時」？\n\n[確定] 登記事假一小時\n[取消] 登記為遲到");
+                    if (wantLeave) {
+                        status = "事假一小時";
+                        note = "09:30-10:00 逾時轉事假一小時";
+                    } else {
+                        status = "遲到";
+                    }
+                } 
+                else if (totalMinutes >= t1000 && totalMinutes < t1100) {
+                    let wantLeave = confirm("目前時間在 10:00 - 11:00 之間，是否要登記為「事假兩小時」？\n\n[確定] 登記事假兩小時\n[取消] 登記為遲到");
+                    if (wantLeave) {
+                        status = "事假兩小時";
+                        note = "10:00-11:00 逾時轉事假兩小時";
+                    } else {
+                        status = "遲到";
+                    }
+                } 
+                else if (totalMinutes >= t1100) {
+                    let wantLeave = confirm("目前時間已超過 11:00，是否要登記為事假？\n\n[確定] 登記事假\n[取消] 登記為遲到");
+                    if (wantLeave) {
+                        status = "事假";
+                        note = "11:00後逾時轉事假";
+                    } else {
+                        status = "遲到";
+                    }
+                } 
+                else if (totalMinutes > workStartTime) {
+                    status = "正常(彈性)";
                 }
             } 
-            // 2. 10:00 ~ 10:59 (事假兩小時) —— 包含現在的 10 點多！
-            else if (totalMinutes >= t1000 && totalMinutes < t1100) {
-                let wantLeave = confirm("目前時間在 10:00 - 11:00 之間，是否要登記為「事假兩小時」？\n\n[確定] 登記事假兩小時\n[取消] 登記為遲到");
-                if (wantLeave) {
-                    status = "事假兩小時";
-                    note = "10:00-11:00 逾時轉事假兩小時";
-                } else {
+            // 👥 同事A與同事B的一般打卡邏輯
+            else {
+                if (totalMinutes > workStartTime) {
                     status = "遲到";
-                }
-            } 
-            // 3. 11:00 以後
-            else if (totalMinutes >= t1100) {
-                let wantLeave = confirm("目前時間已超過 11:00，是否要登記為事假？\n\n[確定] 登記事假\n[取消] 登記為遲到");
-                if (wantLeave) {
-                    status = "事假";
-                    note = "11:00後逾時轉事假";
                 } else {
-                    status = "遲到";
+                    status = "正常";
                 }
-            } 
-            // 4. 09:00 ~ 09:30 之間 (彈性正常)
-            else if (totalMinutes > workStartTime) {
-                status = "正常(彈性)";
             }
             
-            sendData({ name: FIXED_NAME, action: actionType, status: status, note: note });
+            sendData({ name: name, action: actionType, status: status, note: note });
 
         }, function(error) {
             alert("無法取得定位，請確認手機是否有開啟 GPS 權限！");
         }, { enableHighAccuracy: true });
     }
+
     function handleCheckOut() {
-        sendData({ name: FIXED_NAME, action: "checkout", status: "下班打卡", note: "" });
+        let name = getSelectedName();
+        if (!name) return;
+        sendData({ name: name, action: "checkout", status: "下班打卡", note: "" });
     }
 
     function handleLeave() {
+        let name = getSelectedName();
+        if (!name) return;
         let note = document.getElementById("leaveNote").value.trim();
-        sendData({ name: FIXED_NAME, action: "leave", status: "事假", note: note || "事假" });
+        sendData({ name: name, action: "leave", status: "事假", note: note || "事假" });
     }
 
     function sendData(payload) {
