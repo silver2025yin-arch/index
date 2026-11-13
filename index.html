@@ -75,8 +75,8 @@ function handleCheckIn() {
             let actionType = "checkin";
             let note = "";
 
+            // 1. 09:30 ~ 09:59 (事假一小時)
             if (totalMinutes >= t930 && totalMinutes < t1000) {
-                // 09:30 ~ 10:00 之間：事假一小時
                 let wantLeave = confirm("目前時間在 09:30 - 10:00 之間，是否要登記為「事假一小時」？\n\n[確定] 登記事假一小時\n[取消] 登記為遲到");
                 if (wantLeave) {
                     status = "事假一小時";
@@ -84,8 +84,9 @@ function handleCheckIn() {
                 } else {
                     status = "遲到";
                 }
-            } else if (totalMinutes >= t1000 && totalMinutes < t1100) {
-                // 10:00 ~ 11:00 之間：事假兩小時
+            } 
+            // 2. 10:00 ~ 10:59 (事假兩小時) —— 包含現在的 10 點多！
+            else if (totalMinutes >= t1000 && totalMinutes < t1100) {
                 let wantLeave = confirm("目前時間在 10:00 - 11:00 之間，是否要登記為「事假兩小時」？\n\n[確定] 登記事假兩小時\n[取消] 登記為遲到");
                 if (wantLeave) {
                     status = "事假兩小時";
@@ -93,8 +94,9 @@ function handleCheckIn() {
                 } else {
                     status = "遲到";
                 }
-            } else if (totalMinutes >= t1100) {
-                // 11:00 以後
+            } 
+            // 3. 11:00 以後
+            else if (totalMinutes >= t1100) {
                 let wantLeave = confirm("目前時間已超過 11:00，是否要登記為事假？\n\n[確定] 登記事假\n[取消] 登記為遲到");
                 if (wantLeave) {
                     status = "事假";
@@ -102,7 +104,9 @@ function handleCheckIn() {
                 } else {
                     status = "遲到";
                 }
-            } else if (totalMinutes > workStartTime) {
+            } 
+            // 4. 09:00 ~ 09:30 之間 (彈性正常)
+            else if (totalMinutes > workStartTime) {
                 status = "正常(彈性)";
             }
             
