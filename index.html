@@ -20,9 +20,9 @@
 <div class="card">
     <h2>個人打卡系統</h2>
     <div class="user-tag" id="userDisplay">目前使用者：載入中...</div>
-    <p style="font-size: 13px; color: #666; margin-top: 0;">規定時間：09:00 - 18:00 (超過09:30打卡可選擇轉為事假)</p>
+    <p style="font-size: 13px; color: #666; margin-top: 0;">基準 09:00 | 09:30-10:00 轉事假1小時 | 11:00 轉事假2小時</p>
 
-    <button onclick="handleCheckIn()">上班打卡 (GPS定位 + 逾時判定)</button>
+    <button onclick="handleCheckIn()">上班打卡 (GPS定位 + 時段判定)</button>
     <button class="checkout" onclick="handleCheckOut()">下班打卡</button>
     <hr>
     <h3>事假登記</h3>
@@ -32,7 +32,7 @@
 
 <script>
     // ⚠️ 請換成你的 Apps Script 網址
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx27hnSwviU5XSSCmmvcaRKQHS9y_tq9SRuOrhxOwKSKYlKfat-TB-13ywWL2j0XBw5fg/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzGdirz2IAWVXLj4aGSSp95KPuoDaE8CSaeadVjp7Dr76SB6XwxDi7z49zsQmcf13qh8A/exec";
     const FIXED_NAME = "周傳芸";
 
     // ⚠️ 請換成你們公司的經緯度與範圍
@@ -67,19 +67,29 @@
             let minute = now.getMinutes();
             let totalMinutes = hour * 60 + minute; 
             
-            let workStartTime = 9 * 60;     
-            let lateThreshold = 9 * 60 + 30; 
+            let workStartTime = 9 * 60;          // 09:00 = 540分
+            let t930 = 9 * 60 + 30;              // 09:30 = 570分
+            let t1000 = 10 * 60;                 // 10:00 = 600分
+            let t1100 = 11 * 60;                 // 11:00 = 660分
 
             let status = "正常";
             let actionType = "checkin";
             let note = "";
 
-            if (totalMinutes > lateThreshold) {
-                let wantLeave = confirm("您目前已超過 09:30 達 30 分鐘以上，是否要直接改登記為「事假」？\n\n[確定] 登記為事假\n[取消] 登記為遲到打卡");
-                
+            // 依據打卡時間動態判定事假時數
+            if (totalMinutes >= t930 && totalMinutes <= t1000) {
+                let wantLeave = confirm("目前時間在 09:30 - 10:00 之間，是否要登記為「事假一小時」？\n\n[確定] 登記事假一小時\n[取消] 登記為遲到");
                 if (wantLeave) {
-                    status = "事假";
-                    note = "逾時未到轉事假";
+                    status = "事假一小時";
+                    note = "09:30-10:00 逾時轉事假";
+                } else {
+                    status = "遲到";
+                }
+            } else if (totalMinutes >= t1100 || (hour === 11)) {
+                let wantLeave = confirm("目前時間已達 11:00 左右，是否要登記為「事假兩小時」？\n\n[確定] 登記事假兩小時\n[取消] 登記為遲到");
+                if (wantLeave) {
+                    status = "事假兩小時";
+                    note = "11:00 逾時轉事假";
                 } else {
                     status = "遲到";
                 }
